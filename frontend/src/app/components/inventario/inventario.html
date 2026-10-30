@@ -1,0 +1,219 @@
+<div class="modulo">
+  <div class="encabezado">
+    <span class="ruta">INVENTARIO / ALMACÉN</span>
+    <h1>Inventario y Almacén</h1>
+  </div>
+  @if (error()) {
+    <p class="aviso-error" role="alert">{{ error() }}</p>
+  }
+  @if (mensaje()) {
+    <p class="success" role="status">{{ mensaje() }}</p>
+  }
+  <div class="tarjetas">
+    <div class="tarjeta">
+      <span class="etiqueta">Insumos activos</span><span class="valor">{{ insumos().length }}</span>
+    </div>
+    <div class="tarjeta">
+      <span class="etiqueta">Stock bajo mínimo</span
+      ><span class="valor negativo">{{ stockBajo() }}</span>
+    </div>
+    <div class="tarjeta">
+      <span class="etiqueta">Valor de inventario</span
+      ><span class="valor positivo">${{ valorInventario() | number: '1.2-2' }}</span>
+    </div>
+    <div class="tarjeta">
+      <span class="etiqueta">Insumos con reservas PayPal</span
+      ><span class="valor alerta">{{ reservas() }}</span>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-header">
+      <div class="acciones">
+        <button class="btn-primario" (click)="abrir()">+ Nuevo insumo</button
+        ><button (click)="exportar()">Exportar CSV</button
+        ><button (click)="verHistorial = !verHistorial">
+          {{ verHistorial ? 'Ver existencias' : 'Ver movimientos' }}
+        </button>
+      </div>
+    </div>
+    @if (cargando()) {
+      <p role="status">Cargando inventario…</p>
+    }
+    @if (!verHistorial) {
+      <div class="toolbar">
+        <input
+          aria-label="Buscar insumo"
+          placeholder="Buscar insumo o categoría"
+          [ngModel]="busqueda()"
+          (ngModelChange)="busqueda.set($event)"
+        />
+      </div>
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>Insumo</th>
+            <th>Stock / reservado</th>
+            <th>Disponible / mínimo</th>
+            <th>Nivel</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (i of filtrados(); track i.id) {
+            <tr>
+              <td class="fuerte">
+                {{ i.nombre }}<br /><small
+                  >{{ i.categoria }} · ${{ i.valorUnitario | number: '1.2-2' }} /
+                  {{ i.unidad }}</small
+                >
+              </td>
+              <td>{{ i.stockActual }} / {{ i.stockReservado }} {{ i.unidad }}</td>
+              <td>{{ i.stockDisponible }} / {{ i.stockMinimo }} {{ i.unidad }}</td>
+              <td>
+                <div class="barra-fondo">
+                  <div
+                    class="barra-nivel"
+                    [class.barra-baja]="estado(i) === 'Bajo'"
+                    [style.width.%]="nivel(i)"
+                  ></div>
+                </div>
+              </td>
+              <td>
+                <span
+                  class="badge"
+                  [class.badge-verde]="estado(i) === 'OK'"
+                  [class.badge-rojo]="estado(i) === 'Bajo'"
+                  >{{ estado(i) }}</span
+                >
+              </td>
+              <td>
+                <button class="link-button" (click)="abrir(i)">Editar</button
+                ><button class="link-button" (click)="ajustar(i)">Ajustar stock</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="empty">No hay insumos que mostrar.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Insumo</th>
+            <th>Cantidad</th>
+            <th>Motivo</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (m of movimientos(); track m.id) {
+            <tr>
+              <td>{{ m.fecha.slice(0, 16).replace('T', ' ') }}</td>
+              <td>{{ m.nombre }}</td>
+              <td>{{ m.cantidad_miles / 1000 }} {{ m.unidad }}</td>
+              <td>{{ m.motivo }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="4">No hay movimientos.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>
+@if (modal) {
+  <div class="modal-backdrop">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="inventory-title">
+      <div class="modal-head">
+        <h2 id="inventory-title">
+          {{
+            modal === 'ajuste'
+              ? 'Ajustar ' + seleccionado?.nombre
+              : form.id
+                ? 'Editar insumo'
+                : 'Nuevo insumo'
+          }}
+        </h2>
+        <button (click)="modal = ''" [disabled]="busy()">Cerrar</button>
+      </div>
+      @if (error()) {
+        <p role="alert" class="aviso-error">{{ error() }}</p>
+      }
+      @if (modal === 'insumo') {
+        <form class="form-grid" #f="ngForm" (ngSubmit)="guardar()">
+          <label
+            >Nombre<input name="nombre" [(ngModel)]="form.nombre" required maxlength="120" /></label
+          ><label
+            >Categoría<input
+              name="categoria"
+              [(ngModel)]="form.categoria"
+              required
+              maxlength="80" /></label
+          ><label
+            >Unidad<input name="unidad" [(ngModel)]="form.unidad" required maxlength="20"
+          /></label>
+          @if (!form.id) {
+            <label
+              >Stock inicial<input
+                name="stock"
+                type="number"
+                [(ngModel)]="form.stockActual"
+                required
+                min="0"
+                max="1000000"
+                step="0.001"
+            /></label>
+          }
+          <label
+            >Stock mínimo<input
+              name="minimo"
+              type="number"
+              [(ngModel)]="form.stockMinimo"
+              required
+              min="0"
+              max="1000000"
+              step="0.001" /></label
+          ><label
+            >Costo por unidad MXN<input
+              name="costo"
+              type="number"
+              [(ngModel)]="form.valorUnitario"
+              required
+              min="0.01"
+              max="10000000"
+              step="0.01" /></label
+          ><button class="btn-primario" [disabled]="f.invalid || busy()">Guardar</button>
+        </form>
+      } @else {
+        <form class="form-grid" #a="ngForm" (ngSubmit)="guardarAjuste()">
+          <p class="wide">
+            Usa una cantidad positiva para entrada o negativa para salida. El motivo quedará en el
+            historial.
+          </p>
+          <label
+            >Cantidad<input
+              name="cantidad"
+              type="number"
+              [(ngModel)]="ajuste.cantidad"
+              required
+              step="0.001" /></label
+          ><label
+            >Motivo<input
+              name="motivo"
+              [(ngModel)]="ajuste.motivo"
+              required
+              maxlength="180" /></label
+          ><button class="btn-primario" [disabled]="a.invalid || busy() || ajuste.cantidad === 0">
+            Registrar ajuste
+          </button>
+        </form>
+      }
+    </section>
+  </div>
+}

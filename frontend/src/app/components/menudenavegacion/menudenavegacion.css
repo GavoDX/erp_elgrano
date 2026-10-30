@@ -1,0 +1,29 @@
+.presentacion {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 0 10px;
+}
+
+.presentacion a {
+  text-decoration: none;
+  padding: 10px 20px;
+  border: 2px solid #e9b44c;
+  border-radius: 15px;
+  font-size: 18px;
+  color: #3b2721;
+  transition: transform 0.3s ease;
+  text-align: center;
+  display: inline-block;
+  background-color: #c8553d;
+}
+
+.presentacion a:hover {
+  transform: scale(1.15);
+}
+
+.presentacion a.active {
+  background-color: #e9b44c;
+}

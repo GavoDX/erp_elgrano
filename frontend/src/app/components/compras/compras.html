@@ -1,0 +1,240 @@
+<div class="modulo">
+  <div class="encabezado">
+    <span class="ruta">COMPRAS / ÓRDENES</span>
+    <h1>Compras y Proveedores</h1>
+  </div>
+  @if (error()) {
+    <p class="aviso-error" role="alert">{{ error() }}</p>
+  }
+  @if (mensaje()) {
+    <p class="success" role="status">{{ mensaje() }}</p>
+  }
+  <div class="tarjetas">
+    <div class="tarjeta">
+      <span class="etiqueta">Órdenes pendientes</span
+      ><span class="valor alerta">{{ pendientes() }}</span>
+    </div>
+    <div class="tarjeta">
+      <span class="etiqueta">Órdenes recibidas</span
+      ><span class="valor positivo">{{ recibidas() }}</span>
+    </div>
+    <div class="tarjeta">
+      <span class="etiqueta">Proveedores</span><span class="valor">{{ proveedores().length }}</span>
+    </div>
+    <div class="tarjeta">
+      <span class="etiqueta">Compras pagadas acumuladas</span
+      ><span class="valor negativo">${{ gastoTotal() | number: '1.2-2' }}</span>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-header">
+      <div class="tabs">
+        <button
+          class="tab"
+          [class.tab-activo]="!vistaProveedores"
+          (click)="vistaProveedores = false"
+        >
+          Órdenes de compra</button
+        ><button
+          class="tab"
+          [class.tab-activo]="vistaProveedores"
+          (click)="vistaProveedores = true"
+        >
+          Proveedores
+        </button>
+      </div>
+      <button
+        class="btn-primario"
+        (click)="vistaProveedores ? abrirProveedor() : abrirOrden()"
+        [disabled]="!vistaProveedores && (!proveedores().length || !insumos().length)"
+      >
+        {{ vistaProveedores ? '+ Nuevo proveedor' : '+ Nueva orden' }}
+      </button>
+    </div>
+    @if (cargando()) {
+      <p role="status">Cargando compras…</p>
+    }
+    @if (!vistaProveedores) {
+      <p class="muted">
+        Recibir y pagar confirma la entrada de insumos y registra el egreso completo de la compra.
+      </p>
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>Orden</th>
+            <th>Proveedor / insumos</th>
+            <th>Fecha</th>
+            <th>Total</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (o of ordenes(); track o.id) {
+            <tr>
+              <td class="fuerte">{{ o.orden }}</td>
+              <td>
+                {{ o.proveedor }}<br /><small>{{ o.insumos }}</small>
+              </td>
+              <td>{{ o.fecha.slice(0, 10) }}</td>
+              <td>${{ o.total | number: '1.2-2' }}</td>
+              <td>
+                <span
+                  class="badge"
+                  [class.badge-verde]="o.estado === 'Recibida'"
+                  [class.badge-ambar]="o.estado === 'Pendiente'"
+                  [class.badge-rojo]="o.estado === 'Cancelada'"
+                  >{{ o.estado }}</span
+                >
+              </td>
+              <td>
+                @if (o.estado === 'Pendiente') {
+                  <button class="link-button" (click)="recibir(o)" [disabled]="busy()">
+                    Recibir y pagar</button
+                  ><button class="link-button" (click)="cancelar(o)" [disabled]="busy()">
+                    Cancelar
+                  </button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="empty">
+                No hay órdenes. Crea la primera para reabastecer inventario.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>Proveedor</th>
+            <th>Contacto</th>
+            <th>Categoría</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of proveedores(); track p.id) {
+            <tr>
+              <td class="fuerte">{{ p.nombre }}</td>
+              <td>{{ p.contacto }}</td>
+              <td>{{ p.categoria }}</td>
+              <td><button class="link-button" (click)="abrirProveedor(p)">Editar</button></td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="4">No hay proveedores.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>
+@if (modal) {
+  <div class="modal-backdrop">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="purchase-title">
+      <div class="modal-head">
+        <h2 id="purchase-title">
+          {{ modal === 'proveedor' ? 'Proveedor' : 'Nueva orden de compra' }}
+        </h2>
+        <button (click)="modal = ''" [disabled]="busy()">Cerrar</button>
+      </div>
+      @if (error()) {
+        <p class="aviso-error" role="alert">{{ error() }}</p>
+      }
+      @if (modal === 'proveedor') {
+        <form class="form-grid" #f="ngForm" (ngSubmit)="guardarProveedor()">
+          <label
+            >Nombre<input
+              name="nombre"
+              [(ngModel)]="proveedor.nombre"
+              required
+              maxlength="120" /></label
+          ><label
+            >Contacto<input
+              name="contacto"
+              [(ngModel)]="proveedor.contacto"
+              required
+              maxlength="150" /></label
+          ><label
+            >Categoría<input
+              name="categoria"
+              [(ngModel)]="proveedor.categoria"
+              required
+              maxlength="80" /></label
+          ><button class="btn-primario" [disabled]="f.invalid || busy()">Guardar proveedor</button>
+        </form>
+      } @else {
+        <form class="form-grid" #f="ngForm" (ngSubmit)="guardarOrden()">
+          <label class="wide"
+            >Proveedor<select
+              aria-label="Proveedor"
+              name="proveedor"
+              [(ngModel)]="orden.proveedorId"
+              required
+            >
+              @for (p of proveedores(); track p.id) {
+                <option [ngValue]="p.id">{{ p.nombre }}</option>
+              }
+            </select></label
+          >
+          <div class="wide">
+            @for (row of orden.items; track $index; let i = $index) {
+              <div class="receta-row">
+                <label
+                  >Insumo<select
+                    aria-label="Insumo"
+                    [name]="'insumo' + i"
+                    [(ngModel)]="row.insumoId"
+                    (ngModelChange)="costo(i)"
+                    required
+                  >
+                    @for (s of insumos(); track s.id) {
+                      <option [ngValue]="s.id">{{ s.nombre }} ({{ s.unidad }})</option>
+                    }
+                  </select></label
+                ><label
+                  >Cantidad<input
+                    type="number"
+                    [name]="'cantidad' + i"
+                    [(ngModel)]="row.cantidad"
+                    min="0.001"
+                    max="1000000"
+                    step="0.001"
+                    required /></label
+                ><label
+                  >Costo unitario MXN<input
+                    type="number"
+                    [name]="'costo' + i"
+                    [(ngModel)]="row.costoUnitario"
+                    min="0.01"
+                    max="10000000"
+                    step="0.01"
+                    required /></label
+                ><button
+                  type="button"
+                  (click)="orden.items.splice(i, 1)"
+                  [disabled]="orden.items.length === 1"
+                >
+                  Quitar
+                </button>
+              </div>
+            }
+            <button type="button" (click)="agregar()">+ Agregar insumo</button>
+          </div>
+          <strong>Total: ${{ total() | number: '1.2-2' }} MXN</strong
+          ><button
+            class="btn-primario"
+            [disabled]="f.invalid || busy() || !orden.items.length || !orden.proveedorId"
+          >
+            Crear orden
+          </button>
+        </form>
+      }
+    </section>
+  </div>
+}

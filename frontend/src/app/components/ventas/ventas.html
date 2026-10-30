@@ -1,0 +1,370 @@
+<div class="modulo">
+  <div class="encabezado">
+    <span class="ruta">VENTAS / PUNTO DE VENTA</span>
+    <h1>Ventas y Facturación</h1>
+  </div>
+
+  @if (error()) {
+    <p class="aviso-error">{{ error() }}</p>
+  }
+
+  @if (mensaje()) {
+    <p class="success" role="status">{{ mensaje() }}</p>
+  }
+  @if (cargando()) {
+    <p role="status">Cargando ventas…</p>
+  }
+  @if (auth.obtenerRol() === 'administrador') {
+    <div class="toolbar">
+      <button
+        class="btn-primario"
+        (click)="abrirProducto()"
+        [disabled]="!insumos().length || paypalBusy()"
+      >
+        + Nuevo producto</button
+      ><span class="muted"
+        >Precios finales en MXN. Tarjeta y transferencia registran cobros realizados fuera del
+        sistema.</span
+      >
+    </div>
+  }
+  <div class="pos">
+    <div class="catalogo">
+      <div class="filtros">
+        @for (cat of categorias(); track cat) {
+          <button
+            class="filtro"
+            [class.filtro-activo]="categoriaActiva() === cat"
+            (click)="categoriaActiva.set(cat)"
+          >
+            {{ cat }}
+          </button>
+        }
+      </div>
+
+      <div class="grid-productos">
+        @for (p of productosFiltrados(); track p.nombre) {
+          <div class="producto-card">
+            <span class="producto-nombre">{{ p.nombre }}</span>
+            <span class="producto-precio">${{ p.precio | number: '1.2-2' }}</span
+            ><small>Disponibles: {{ p.stockDisponible }}</small>
+            @if (auth.obtenerRol() === 'administrador') {
+              <button class="link-button" (click)="abrirProducto(p)" [disabled]="paypalBusy()">
+                Editar
+              </button>
+            }
+            <button
+              class="btn-agregar"
+              (click)="agregarProducto(p)"
+              [disabled]="p.stockDisponible < 1 || cobrando() || paypalBusy()"
+              [attr.aria-label]="'Agregar ' + p.nombre"
+            >
+              +
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="carrito">
+      <div class="carrito-header">
+        <h2>Pedido actual</h2>
+        <span class="badge-estado">En preparación</span>
+      </div>
+
+      @if (pedido().length === 0) {
+        <p class="carrito-vacio">Agrega productos del catálogo para iniciar un pedido.</p>
+      } @else {
+        <div class="lista-pedido">
+          @for (i of pedido(); track i.nombre) {
+            <div class="item-pedido">
+              <span>{{ i.cantidad }}x {{ i.nombre }}</span>
+              <span class="item-precio">
+                ${{ i.precio * i.cantidad | number: '1.2-2' }}
+                <button
+                  class="btn-quitar"
+                  (click)="quitarProducto(i.id)"
+                  [disabled]="cobrando() || paypalBusy()"
+                  [attr.aria-label]="'Quitar ' + i.nombre"
+                >
+                  ×
+                </button>
+              </span>
+            </div>
+          }
+        </div>
+
+        <div class="totales">
+          <div class="fila-total">
+            <span>Subtotal</span><span>${{ subtotal() | number: '1.2-2' }}</span>
+          </div>
+          <div class="fila-total">
+            <span>Descuento (10% cliente frecuente)</span
+            ><span>-${{ descuento() | number: '1.2-2' }}</span>
+          </div>
+          <div class="fila-total fila-final">
+            <span>Total</span><span>${{ total() | number: '1.2-2' }}</span>
+          </div>
+        </div>
+
+        <div class="metodos">
+          @for (m of metodosPago; track m) {
+            <button
+              class="metodo"
+              [class.metodo-activo]="metodoPago() === m"
+              (click)="seleccionarMetodo(m)"
+              [disabled]="cobrando() || paypalBusy()"
+            >
+              {{ m }}
+            </button>
+          }
+        </div>
+
+        @if (metodoPago() === 'PayPal') {
+          <app-checkout
+            [productos]="productosPaypal()"
+            (pagado)="completado($event)"
+            (cambio)="cargar()"
+            (bloqueado)="paypalBusy.set($event)"
+          />
+        } @else {
+          <button
+            class="btn-cobrar"
+            (click)="cobrar()"
+            [disabled]="cobrando() || pedido().length === 0"
+          >
+            Cobrar ${{ total() | number: '1.2-2' }}
+          </button>
+        }
+      }
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <h2>Comprobantes de venta recientes</h2>
+    </div>
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Folio</th>
+          <th>Cliente</th>
+          <th>Fecha</th>
+          <th>Método</th>
+          <th>Total</th>
+          <th>Detalle</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (f of facturas(); track f.folio) {
+          <tr>
+            <td class="fuerte">{{ f.folio }}</td>
+            <td>{{ f.cliente }}</td>
+            <td>{{ f.fecha.slice(0, 10) }}</td>
+            <td>{{ f.metodo }}</td>
+            <td>${{ f.total | number: '1.2-2' }}</td>
+            <td><button class="link-button" (click)="verDetalle(f)">Ver</button></td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="empty">No hay ventas registradas.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@if (pendientes().length) {
+  <section class="modulo panel">
+    <h2>Pagos PayPal pendientes</h2>
+    <p class="muted">
+      Verificar pago intenta capturar o recuperar la orden aprobada. Cancelar reserva libera el
+      stock después de comprobar que no hubo captura.
+    </p>
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Orden</th>
+          <th>Total</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (o of pendientes(); track o.id) {
+          <tr>
+            <td>{{ o.id }}</td>
+            <td>${{ o.total | number: '1.2-2' }}</td>
+            <td>{{ o.estado }}</td>
+            <td>
+              <button (click)="verificar(o)" [disabled]="cobrando() || paypalBusy()">
+                Verificar pago</button
+              ><button (click)="cancelar(o)" [disabled]="cobrando() || paypalBusy()">
+                Cancelar reserva
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </section>
+}
+@if (modal) {
+  <div class="modal-backdrop">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="product-title">
+      <div class="modal-head">
+        <h2 id="product-title">Producto y receta</h2>
+        <button (click)="modal = false" [disabled]="cobrando()">Cerrar</button>
+      </div>
+      @if (error()) {
+        <p class="aviso-error" role="alert">{{ error() }}</p>
+      }
+      <form class="form-grid" #f="ngForm" (ngSubmit)="guardarProducto()">
+        <label
+          >Nombre<input name="nombre" [(ngModel)]="form.nombre" required maxlength="120" /></label
+        ><label
+          >Categoría<select aria-label="Categoría" name="categoria" [(ngModel)]="form.categoria">
+            <option>Bebidas calientes</option>
+            <option>Bebidas frías</option>
+            <option>Alimentos</option>
+            <option>Postres</option>
+          </select></label
+        ><label
+          >Precio final MXN<input
+            name="precio"
+            type="number"
+            [(ngModel)]="form.precio"
+            required
+            min="0.01"
+            max="10000000"
+            step="0.01"
+        /></label>
+        <div class="wide">
+          <h3>Insumos por unidad vendida</h3>
+          @for (r of form.receta; track $index; let i = $index) {
+            <div class="receta-row">
+              <label
+                >Insumo<select
+                  aria-label="Insumo"
+                  [name]="'insumo' + i"
+                  [(ngModel)]="r.insumoId"
+                  required
+                >
+                  @for (s of insumos(); track s.id) {
+                    <option [ngValue]="s.id">{{ s.nombre }} ({{ s.unidad }})</option>
+                  }
+                </select></label
+              ><label
+                >Cantidad por producto<input
+                  [name]="'cantidad' + i"
+                  type="number"
+                  [(ngModel)]="r.cantidad"
+                  min="0.001"
+                  max="1000000"
+                  step="0.001"
+                  required /></label
+              ><button
+                type="button"
+                (click)="form.receta?.splice(i, 1)"
+                [disabled]="form.receta?.length === 1"
+              >
+                Quitar
+              </button>
+            </div>
+          }
+          <button type="button" (click)="agregarInsumo()">+ Insumo de receta</button>
+        </div>
+        <button class="btn-primario" [disabled]="f.invalid || cobrando() || !form.receta?.length">
+          Guardar producto
+        </button>
+      </form>
+    </section>
+  </div>
+}
+@if (detalle(); as d) {
+  <div class="modal-backdrop">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="sale-title">
+      <div class="modal-head">
+        <h2 id="sale-title">Venta {{ d.folio }}</h2>
+        <button (click)="detalle.set(null)" [disabled]="correoBusy()">Cerrar</button>
+      </div>
+      <p>{{ d.fecha }} · {{ d.metodo }} · {{ d.cliente }}</p>
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Precio unitario</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (i of d.items; track i.nombre) {
+            <tr>
+              <td>{{ i.nombre }}</td>
+              <td>{{ i.cantidad }}</td>
+              <td>${{ i.precioUnitario | number: '1.2-2' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <p>
+        Descuento aplicado: 10%. <strong>Total: ${{ d.total | number: '1.2-2' }} MXN</strong>
+      </p>
+      <p class="muted">Comprobante interno de venta. No es un CFDI.</p>
+      <div class="acciones"><button (click)="descargarXml()">Descargar XML</button></div>
+      <h3>Enviar comprobante por correo</h3>
+      @if (correoMensaje()) {
+        <p class="success" role="status">{{ correoMensaje() }}</p>
+      }
+      @if (correoError()) {
+        <p class="aviso-error" role="alert">{{ correoError() }}</p>
+      }
+      <form class="form-grid" #emailForm="ngForm" (ngSubmit)="enviarCorreo()">
+        <label
+          >Nombre del destinatario<input
+            name="nombreDestinatario"
+            [(ngModel)]="correo.nombre"
+            maxlength="100"
+        /></label>
+        <label
+          >Correo del destinatario<input
+            name="correoDestinatario"
+            type="email"
+            [(ngModel)]="correo.correo"
+            required
+            email
+            maxlength="150"
+        /></label>
+        <button class="btn-primario" [disabled]="emailForm.invalid || correoBusy()">
+          {{ correoBusy() ? 'Enviando…' : 'Enviar XML' }}
+        </button>
+      </form>
+      <h3>Historial de correos</h3>
+      <div class="historial-correo">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Correo</th>
+              <th>Estado</th>
+              <th>Fecha</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (e of envios(); track e.id) {
+              <tr>
+                <td>{{ e.destinatario }}</td>
+                <td>{{ e.estado }}</td>
+                <td>{{ e.fecha.slice(0, 16).replace('T', ' ') }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="3">Sin envíos registrados.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+}

@@ -1,0 +1,169 @@
+<div class="modulo">
+  <div class="encabezado">
+    <span class="ruta">RRHH / PERSONAL</span>
+    <h1>Recursos Humanos</h1>
+  </div>
+  @if (error()) {
+    <p class="aviso-error" role="alert">{{ error() }}</p>
+  }
+  @if (mensaje()) {
+    <p class="success" role="status">{{ mensaje() }}</p>
+  }
+  <div class="tarjetas">
+    <div class="tarjeta">
+      <span class="etiqueta">Empleados activos</span
+      ><span class="valor positivo">{{ activos() }}</span>
+    </div>
+    <div class="tarjeta">
+      <span class="etiqueta">Personal registrado</span
+      ><span class="valor">{{ empleados().length }}</span>
+    </div>
+    <div class="tarjeta">
+      <span class="etiqueta">Nómina mensual vigente</span
+      ><span class="valor">${{ salarioTotal() | number: '1.2-2' }}</span>
+    </div>
+  </div>
+  <div class="dos-columnas">
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Empleados</h2>
+        <button class="btn-primario" (click)="abrir()">+ Nuevo empleado</button>
+      </div>
+      @if (cargando()) {
+        <p role="status">Cargando personal…</p>
+      }
+      <div class="lista-empleados">
+        @for (e of empleados(); track e.id) {
+          <div class="empleado-card">
+            <div class="avatar" aria-hidden="true">{{ e.nombre.charAt(0) }}</div>
+            <div class="empleado-info">
+              <span class="empleado-nombre">{{ e.nombre }}</span
+              ><span class="empleado-puesto"
+                >{{ e.puesto }} · ${{ e.salario | number: '1.2-2' }} / mes</span
+              ><span class="empleado-turno">{{ e.turno }} · {{ e.correo }}</span>
+              <div class="acciones">
+                <button class="link-button" (click)="abrir(e)">Editar</button>
+                @if (e.estado !== 'Baja') {
+                  <button class="link-button" (click)="nomina(e)">Pagar nómina</button>
+                }
+              </div>
+            </div>
+            <span
+              class="badge"
+              [class.badge-verde]="e.estado === 'Activo'"
+              [class.badge-rojo]="e.estado === 'Baja'"
+              [class.badge-ambar]="e.estado === 'En descanso'"
+              >{{ e.estado }}</span
+            >
+          </div>
+        } @empty {
+          <p>No hay empleados.</p>
+        }
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><h2>Turnos semanales</h2></div>
+      <p class="muted">Matutino y vespertino: lunes a viernes. Fin de semana: sábado y domingo.</p>
+      @for (t of turnos; track t) {
+        <h3>{{ t }}</h3>
+        <p>{{ enTurno(t) }}</p>
+      }
+      <p class="muted">Edita un empleado para cambiar su turno o estado.</p>
+    </div>
+  </div>
+  <div class="panel" style="margin-top: 22px">
+    <div class="panel-header"><h2>Nóminas pagadas</h2></div>
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Empleado</th>
+          <th>Periodo</th>
+          <th>Fecha</th>
+          <th>Monto</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (n of nominas(); track n.id) {
+          <tr>
+            <td>{{ n.nombre }}</td>
+            <td>{{ n.periodo }}</td>
+            <td>{{ n.fecha.slice(0, 10) }}</td>
+            <td>${{ n.monto | number: '1.2-2' }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="4">No hay nóminas pagadas.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+@if (modal) {
+  <div class="modal-backdrop">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="hr-title">
+      <div class="modal-head">
+        <h2 id="hr-title">{{ modal === 'empleado' ? 'Datos del empleado' : 'Pagar nómina' }}</h2>
+        <button (click)="modal = ''" [disabled]="busy()">Cerrar</button>
+      </div>
+      @if (error()) {
+        <p class="aviso-error" role="alert">{{ error() }}</p>
+      }
+      @if (modal === 'empleado') {
+        <form class="form-grid" #f="ngForm" (ngSubmit)="guardar()">
+          <label
+            >Nombre<input name="nombre" [(ngModel)]="form.nombre" required maxlength="100" /></label
+          ><label
+            >Puesto<input name="puesto" [(ngModel)]="form.puesto" required maxlength="80" /></label
+          ><label
+            >Correo<input
+              name="correo"
+              [(ngModel)]="form.correo"
+              type="email"
+              email
+              required
+              maxlength="150" /></label
+          ><label
+            >Turno<select aria-label="Turno" name="turno" [(ngModel)]="form.turno">
+              @for (t of turnos; track t) {
+                <option>{{ t }}</option>
+              }
+            </select></label
+          ><label
+            >Estado<select aria-label="Estado" name="estado" [(ngModel)]="form.estado">
+              <option>Activo</option>
+              <option>En descanso</option>
+              <option>Baja</option>
+            </select></label
+          ><label
+            >Salario mensual MXN<input
+              name="salario"
+              [(ngModel)]="form.salario"
+              type="number"
+              min="0.01"
+              max="10000000"
+              step="0.01"
+              required /></label
+          ><button class="btn-primario" [disabled]="f.invalid || busy()">Guardar empleado</button>
+        </form>
+      } @else {
+        <form class="form-grid" #f="ngForm" (ngSubmit)="pagar()">
+          <p class="wide">
+            Pagar a {{ seleccionado?.nombre }}:
+            <strong>${{ seleccionado?.salario | number: '1.2-2' }} MXN</strong>. Se registrará el
+            egreso en finanzas. Un periodo no puede pagarse dos veces.
+          </p>
+          <label
+            >Periodo mensual<input
+              name="periodo"
+              type="month"
+              [(ngModel)]="periodo"
+              required /></label
+          ><button class="btn-primario" [disabled]="f.invalid || busy()">
+            Confirmar pago de nómina
+          </button>
+        </form>
+      }
+    </section>
+  </div>
+}

@@ -1,0 +1,70 @@
+<main class="page">
+  <p class="eyebrow">PANEL PRINCIPAL</p>
+  <h1>Bienvenido, {{ auth.usuario()?.nombre }}</h1>
+  <p>Administra tu cafetería desde un solo lugar. Todos los importes se muestran en MXN.</p>
+  <section class="profile">
+    <h2>Tu cuenta</h2>
+    <dl>
+      <dt>Correo</dt>
+      <dd>{{ auth.usuario()?.correo }}</dd>
+      <dt>Rol</dt>
+      <dd>{{ auth.usuario()?.rol }}</dd>
+      <dt>Estado</dt>
+      <dd>{{ auth.usuario()?.estado }}</dd>
+    </dl>
+  </section>
+  <h2>Áreas de la cafetería</h2>
+  <div class="module-grid">
+    @for (link of links; track link.path) {
+      @if (auth.tieneRol(link.roles)) {
+        <a [routerLink]="link.path"
+          ><strong>{{ link.label }}</strong
+          ><span>{{ link.description }} →</span></a
+        >
+      }
+    }
+  </div>
+  @if (auth.obtenerRol() === 'administrador') {
+    <details class="profile">
+      <summary>Administrar accesos · Registrar usuario</summary>
+      @if (mensaje()) {
+        <p class="notice" role="status">{{ mensaje() }}</p>
+      }
+      <form #f="ngForm" class="form-grid" (ngSubmit)="registrar()">
+        <label
+          >Nombre<input name="nombre" [(ngModel)]="nuevo.nombre" required maxlength="100"
+        /></label>
+        <label
+          >Correo<input
+            name="correo"
+            type="email"
+            [(ngModel)]="nuevo.correo"
+            required
+            email
+            maxlength="150"
+        /></label>
+        <label
+          >Contraseña<input
+            name="contrasena"
+            type="password"
+            [(ngModel)]="nuevo.contrasena"
+            required
+            minlength="8"
+            maxlength="72"
+            autocomplete="new-password"
+        /></label>
+        <label
+          >Rol<select aria-label="Rol" name="rol" [(ngModel)]="nuevo.rol">
+            <option value="administrador">Administrador</option>
+            <option value="cajero">Cajero</option>
+            <option value="compras">Compras</option>
+            <option value="almacen">Almacén</option>
+            <option value="rrhh">RRHH</option>
+            <option value="contador">Contador</option>
+          </select></label
+        >
+        <button [disabled]="f.invalid || busy()" class="btn-primario">Registrar usuario</button>
+      </form>
+    </details>
+  }
+</main>

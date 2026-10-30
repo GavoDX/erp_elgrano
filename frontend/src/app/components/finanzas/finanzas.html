@@ -1,0 +1,133 @@
+<div class="modulo">
+  <div class="encabezado">
+    <span class="ruta">FINANZAS / RESUMEN GENERAL</span>
+    <h1>Contabilidad y Finanzas</h1>
+  </div>
+  @if (error()) {
+    <p class="aviso-error" role="alert">{{ error() }}</p>
+  }
+  @if (mensaje()) {
+    <p class="success" role="status">{{ mensaje() }}</p>
+  }
+  <div class="tarjetas">
+    <div class="tarjeta">
+      <span class="etiqueta">Ingresos acumulados</span
+      ><span class="valor positivo">${{ resumen().ingresos | number: '1.2-2' }}</span>
+    </div>
+    <div class="tarjeta">
+      <span class="etiqueta">Egresos acumulados</span
+      ><span class="valor negativo">${{ resumen().egresos | number: '1.2-2' }}</span>
+    </div>
+    <div class="tarjeta">
+      <span class="etiqueta">Balance de caja</span
+      ><span
+        class="valor"
+        [class.positivo]="resumen().balance >= 0"
+        [class.negativo]="resumen().balance < 0"
+        >${{ resumen().balance | number: '1.2-2' }}</span
+      >
+    </div>
+    <div class="tarjeta">
+      <span class="etiqueta">Compras pendientes de recibir y pagar</span
+      ><span class="valor alerta">${{ resumen().cuentasPorPagar | number: '1.2-2' }}</span>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-header">
+      <h2>Movimientos contables</h2>
+      <div class="acciones">
+        <button class="btn-primario" (click)="abrir()">+ Movimiento manual</button
+        ><button class="btn-secundario" (click)="exportar()">Exportar CSV</button>
+      </div>
+    </div>
+    <p class="muted">
+      Ventas, recepción de compras y nómina se registran automáticamente. Los movimientos manuales
+      sirven para otros ingresos o gastos. Resumen acumulado desde el inicio.
+    </p>
+    @if (cargando()) {
+      <p role="status">Cargando movimientos…</p>
+    }
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Concepto</th>
+          <th>Categoría</th>
+          <th>Tipo</th>
+          <th>Monto MXN</th>
+          <th>Origen</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (m of movimientos(); track m.id) {
+          <tr>
+            <td>{{ m.fecha.slice(0, 10) }}</td>
+            <td>{{ m.concepto }}</td>
+            <td>{{ m.categoria }}</td>
+            <td>
+              <span
+                class="badge"
+                [class.badge-verde]="m.tipo === 'Ingreso'"
+                [class.badge-rojo]="m.tipo === 'Egreso'"
+                >{{ m.tipo }}</span
+              >
+            </td>
+            <td [class.positivo]="m.tipo === 'Ingreso'" [class.negativo]="m.tipo === 'Egreso'">
+              {{ m.tipo === 'Egreso' ? '-' : '' }}${{ m.monto | number: '1.2-2' }}
+            </td>
+            <td>{{ m.referencia || 'Manual' }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="empty">
+              Todavía no hay movimientos. Registra una venta o un movimiento manual.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    <p class="muted">Se muestran los últimos 1,000 movimientos; el resumen incluye todos.</p>
+  </div>
+</div>
+@if (modal) {
+  <div class="modal-backdrop">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="finance-title">
+      <div class="modal-head">
+        <h2 id="finance-title">Nuevo movimiento</h2>
+        <button (click)="modal = false" [disabled]="busy()">Cerrar</button>
+      </div>
+      @if (error()) {
+        <p class="aviso-error" role="alert">{{ error() }}</p>
+      }
+      <form class="form-grid" #f="ngForm" (ngSubmit)="guardar()">
+        <label
+          >Concepto<input
+            name="concepto"
+            [(ngModel)]="form.concepto"
+            required
+            maxlength="180" /></label
+        ><label
+          >Categoría<input
+            name="categoria"
+            [(ngModel)]="form.categoria"
+            required
+            maxlength="60" /></label
+        ><label
+          >Tipo<select aria-label="Tipo" name="tipo" [(ngModel)]="form.tipo">
+            <option>Ingreso</option>
+            <option>Egreso</option>
+          </select></label
+        ><label
+          >Monto MXN<input
+            name="monto"
+            [(ngModel)]="form.monto"
+            type="number"
+            min="0.01"
+            max="10000000"
+            step="0.01"
+            required /></label
+        ><button class="btn-primario" [disabled]="f.invalid || busy()">Registrar movimiento</button>
+      </form>
+    </section>
+  </div>
+}

@@ -1,0 +1,211 @@
+.modulo {
+  width: 90%;
+  max-width: 1100px;
+  margin: 30px auto;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  color: #3b2721;
+}
+
+.encabezado {
+  margin-bottom: 20px;
+}
+
+.ruta {
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  color: #a9754b;
+  text-transform: uppercase;
+}
+
+.encabezado h1 {
+  font-size: 2rem;
+  margin-top: 4px;
+}
+
+.tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 18px;
+  margin-bottom: 25px;
+}
+
+.tarjeta {
+  background-color: #ffffff;
+  border-radius: 14px;
+  padding: 18px 20px;
+  box-shadow: 0 4px 12px rgba(59, 39, 33, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.etiqueta {
+  font-size: 0.85rem;
+  color: #8a6a57;
+}
+
+.valor {
+  font-size: 1.6rem;
+  font-weight: bold;
+}
+
+.valor.positivo {
+  color: #2e7d32;
+}
+
+.dos-columnas {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 20px;
+}
+
+.panel {
+  background-color: #ffffff;
+  border-radius: 14px;
+  padding: 20px 24px;
+  box-shadow: 0 4px 12px rgba(59, 39, 33, 0.12);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.panel-header h2 {
+  font-size: 1.15rem;
+}
+
+.btn-primario {
+  background-color: #e9b44c;
+  border: none;
+  color: #3b2721;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: bold;
+  font-size: 0.85rem;
+}
+
+.btn-primario:hover {
+  background-color: #c8553d;
+  color: #fff4e6;
+}
+
+.lista-empleados {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.empleado-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #fff4e6;
+  padding-bottom: 10px;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #fff4e6;
+  border: 2px solid #e9b44c;
+  flex-shrink: 0;
+}
+
+.empleado-info {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.empleado-nombre {
+  font-weight: bold;
+}
+
+.empleado-puesto {
+  font-size: 0.85rem;
+  color: #a9754b;
+}
+
+.empleado-turno {
+  font-size: 0.8rem;
+  color: #8a6a57;
+}
+
+.badge {
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.badge-verde {
+  background-color: #e3f2e1;
+  color: #2e7d32;
+}
+.badge-ambar {
+  background-color: #fcefd1;
+  color: #b4790c;
+}
+
+.calendario {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+}
+
+.calendario th {
+  font-size: 0.75rem;
+  color: #a9754b;
+  padding: 6px;
+}
+
+.calendario td {
+  padding: 6px;
+}
+
+.fuerte {
+  font-weight: bold;
+  text-align: left;
+  font-size: 0.85rem;
+}
+
+.celda {
+  display: block;
+  width: 100%;
+  height: 18px;
+  border-radius: 4px;
+  background-color: #fff4e6;
+}
+
+.turno-matutino {
+  background-color: #8a6a57;
+}
+.turno-vespertino {
+  background-color: #e9b44c;
+}
+.turno-finde {
+  background-color: #4a7a9e;
+}
+
+@media (max-width: 800px) {
+  .dos-columnas {
+    grid-template-columns: 1fr;
+  }
+}
+
+.aviso-error {
+  background: #fdecea;
+  color: #b3261e;
+  border: 1px solid #f2b8b5;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+}

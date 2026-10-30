@@ -1,0 +1,12 @@
+<div class="checkout">
+  <p class="muted" role="status" aria-live="polite">{{ mensaje() }}</p>
+  <paypal-button
+    [hidden]="!listo()"
+    [class.ocupado]="busy()"
+    [attr.aria-disabled]="busy()"
+    (click)="pagar()"
+  ></paypal-button>
+  @if (busy()) {
+    <p role="status">Procesando pago. Completa o cancela la ventana de PayPal.</p>
+  }
+</div>

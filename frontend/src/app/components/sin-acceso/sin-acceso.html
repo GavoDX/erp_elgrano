@@ -1,0 +1,24 @@
+<main class="page">
+  <p class="eyebrow">ACCESO RESTRINGIDO</p>
+  <h1>Sin acceso</h1>
+  <p>
+    Hola, {{ auth.usuario()?.nombre }}. Tu inicio de sesión fue correcto, pero tu rol no tiene
+    permiso para entrar a esta área.
+  </p>
+  <section class="profile">
+    <h2>Tus datos registrados</h2>
+    <dl>
+      <dt>ID</dt>
+      <dd>{{ auth.usuario()?.id }}</dd>
+      <dt>Nombre</dt>
+      <dd>{{ auth.usuario()?.nombre }}</dd>
+      <dt>Correo</dt>
+      <dd>{{ auth.usuario()?.correo }}</dd>
+      <dt>Rol</dt>
+      <dd>{{ auth.usuario()?.rol }}</dd>
+      <dt>Estado</dt>
+      <dd>{{ auth.usuario()?.estado }}</dd>
+    </dl>
+  </section>
+  <p>Usa el menú superior para abrir las áreas autorizadas de tu cuenta.</p>
+</main>

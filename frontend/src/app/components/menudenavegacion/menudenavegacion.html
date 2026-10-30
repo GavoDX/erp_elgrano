@@ -1,0 +1,25 @@
+<header class="topbar">
+  <span class="brand">EL GRANO <small>Cafetería</small></span>
+  @if (auth.usuario(); as user) {
+    <div class="account">
+      <span>{{ user.nombre }} · {{ user.rol }}</span
+      ><button (click)="logout()" [disabled]="closing()">
+        {{ closing() ? 'Cerrando…' : 'Cerrar sesión' }}
+      </button>
+    </div>
+  }
+</header>
+@if (error()) {
+  <p class="error" role="alert">{{ error() }}</p>
+}
+@if (auth.estaAutenticado()) {
+  <nav class="presentacion" aria-label="Menú principal">
+    @for (link of links; track link.path) {
+      @if (auth.tieneRol(link.roles)) {
+        <a [routerLink]="link.path" routerLinkActive="active" ariaCurrentWhenActive="page">{{
+          link.label
+        }}</a>
+      }
+    }
+  </nav>
+}

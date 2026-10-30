@@ -1,0 +1,11 @@
+.checkout {
+  margin-top: 12px;
+}
+paypal-button {
+  display: block;
+  max-width: 300px;
+}
+.ocupado {
+  pointer-events: none;
+  opacity: 0.6;
+}
